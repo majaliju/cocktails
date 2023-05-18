@@ -1,0 +1,76 @@
+import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
+import { useState, useRef, useEffect, useContext } from 'react';
+import { user, UserProvider, UserContext } from '../context/user';
+
+mapboxgl.accessToken =
+  'pk.eyJ1IjoibWFqYWxpanUiLCJhIjoiY2xnbXZ5MjR4MDl3cDNzcWFvN3Nsc3F0aSJ9.eDrOKKxTWcKvQfdCuDIiFA';
+
+function MapboxMap({ bars }) {
+  const { user } = useContext(UserContext);
+
+  const mapContainer = useRef(null);
+  const map = useRef(null);
+  const [lat, setLat] = useState(user.latitude);
+  const [lng, setLng] = useState(user.longitude);
+  const [zoom, setZoom] = useState(12);
+
+  console.log('bars within mapbox: ', bars);
+
+  function isEmptyObj(object) {
+    return JSON.stringify(object) === '{}';
+  }
+  let barsAreEmpty = isEmptyObj(bars);
+  console.log('barsAreEmpty ?: ', barsAreEmpty);
+
+  useEffect(() => {
+    if (map.current) return; // initialize map only once
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/dark-v11',
+      center: [lng, lat],
+      zoom: zoom,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!map.current) return; // wait for map to initialize
+    map.current.on('move', () => {
+      setLng(map.current.getCenter().lng.toFixed(4));
+      setLat(map.current.getCenter().lat.toFixed(4));
+      setZoom(map.current.getZoom().toFixed(10));
+    });
+  });
+
+  // the old original useEffect to render map
+  // useEffect(() => {
+  //   map.current = new mapboxgl.Map({
+  //     container: mapContainer.current,
+  //     style: 'mapbox://styles/mapbox/dark-v11',
+  //     center: [lng, lat],
+  //     zoom: zoom,
+  //   });
+
+  //   // bars.map((eachBar) => {
+  //   //   console.log('eachBar :', eachBar.name);
+  //   //   new mapboxgl.Marker()
+  //   //     .setLngLat([eachBar.latitude, eachBar.longitude])
+  //   //     .addTo(map);
+  //   // });
+  // }, []);
+
+  return (
+    <div>
+      <div ref={mapContainer} className='map-container' />
+      {barsAreEmpty === false
+        ? bars.map((eachBar) => {
+            console.log('eachBar :', eachBar.name);
+            new mapboxgl.Marker()
+              .setLngLat([eachBar.latitude, eachBar.longitude])
+              .addTo(map);
+          })
+        : null}
+    </div>
+  );
+}
+
+export default MapboxMap;
